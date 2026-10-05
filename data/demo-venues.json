@@ -1,0 +1,177 @@
+{
+  "note": "Demo discovery examples only. Not live Sportozen inventory or confirmed bookable venues.",
+  "venues": [
+    {
+      "id": "shuttleyodha-sector52",
+      "name": "ShuttleYodha Badminton | Sector 52",
+      "city": "Gurugram",
+      "locality": "Sector 52",
+      "address": "Shuttleyodha badminton academy, Block C, Ardee City, Sector 52, Gurugram, Haryana",
+      "latitude": 28.4401212,
+      "longitude": 77.0755235,
+      "sports": [
+        "Badminton"
+      ],
+      "sourceUrl": "https://hudle.in/venues/shuttleyodha-badminton-sector-52/585512",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "khelkund-sector63a",
+      "name": "KhelKund",
+      "city": "Gurugram",
+      "locality": "Sector 63A",
+      "address": "Urban sports adda, near AIPL Joy Square, Sector-63A, Kadarpur, Gurugram, Haryana",
+      "latitude": 28.3919653,
+      "longitude": 77.0937438,
+      "sports": [
+        "Badminton"
+      ],
+      "sourceUrl": "https://hudle.in/venues/khelkund/801421",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "coplay-spuddy-gurgaon",
+      "name": "CoPlay Spuddy l Gurgaon",
+      "city": "Gurugram",
+      "locality": "Sector 48",
+      "address": "A192, Vipul Greens Internal Rd, Vipul World, Sector 48, Gurugram, Haryana 122001",
+      "latitude": 28.4148302,
+      "longitude": 77.0335813,
+      "sports": [
+        "Badminton"
+      ],
+      "sourceUrl": "https://hudle.in/venues/spuddy-gurugram/510614",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "insfire-sector62",
+      "name": "Insfire Sports",
+      "city": "Gurugram",
+      "locality": "Sector 62",
+      "address": "Near Jmd Empire, golf road extension, Sector 62, Gurugram, Nangli Umarpur, Haryana 122102",
+      "latitude": 28.4063941,
+      "longitude": 77.0768626,
+      "sports": [
+        "Basketball"
+      ],
+      "sourceUrl": "https://hudle.in/venues/insfire-sports/353827",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "aravali-sports-academy",
+      "name": "Aravali Sports Academy",
+      "city": "Gurugram",
+      "locality": "Sector 49",
+      "address": "S-Block near gate number 1, Uppal southend, sec 49, sohna road",
+      "latitude": 28.410492,
+      "longitude": 77.0463719,
+      "sports": [
+        "Basketball"
+      ],
+      "sourceUrl": "https://hudle.in/venues/aravali-sports-academy/303702",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "my-tribe-sports-fitness",
+      "name": "My Tribe Sports & Fitness",
+      "city": "Gurugram",
+      "locality": "Sector 24",
+      "address": "Rabindranath World School, W- Block, DLF Phase 3, Sector 24, Gurugram, Haryana 122002",
+      "latitude": 28.4960171,
+      "longitude": 77.0977073,
+      "sports": [
+        "Basketball"
+      ],
+      "sourceUrl": "https://hudle.in/venues/my-tribe-sports-fitness/450394",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "active-box-sector57",
+      "name": "Active Box | Sector 57",
+      "city": "Gurugram",
+      "locality": "Sector 57",
+      "address": "Plot No. G-466 Sushant Lok2, Sector 57, Gurgaon",
+      "latitude": 28.4244704,
+      "longitude": 77.0872936,
+      "sports": [
+        "Football"
+      ],
+      "sourceUrl": "https://hudle.in/venues/active-box-sector-57/941413",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "spada-sector43",
+      "name": "SPADA Arenas · Sector 43",
+      "city": "Gurugram",
+      "locality": "Sector 43",
+      "address": "Excelsior American School, Sector 43, Gurugram",
+      "latitude": 28.4573279,
+      "longitude": 77.0889667,
+      "sports": [
+        "Football",
+        "Cricket"
+      ],
+      "sourceUrl": "https://www.playatspada.com/spadaarenas-easgurgaon",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    },
+    {
+      "id": "osm-node-8361457004",
+      "name": "FaceOff-the footballturf",
+      "city": "Gurugram",
+      "locality": "Gurgaon",
+      "address": null,
+      "latitude": 28.4092384,
+      "longitude": 77.0902769,
+      "sports": [
+        "Football"
+      ],
+      "sourceUrl": "https://www.openstreetmap.org/node/8361457004",
+      "photos": [],
+      "facilities": [],
+      "openingHours": null,
+      "startingPrice": null,
+      "rating": null,
+      "offer": null
+    }
+  ]
+}
