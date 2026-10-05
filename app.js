@@ -1,8 +1,10 @@
 import { calculateEndTime, composeMessage } from './booking-utils.mjs';
+import { spotsRemaining, spotsLabel } from './pickup-utils.mjs';
+import { verifiedRating, venueOffer } from './venue-utils.mjs';
 
 const config = window.SPORTOZEN_CONFIG || {};
 const $ = (selector) => document.querySelector(selector);
-const state = { venues: [], filtered: [], selectedId: null, sport: 'All', area: '', search: '', limit: 10, userLocation: null, map: null, mapReady: false, mapMarkers: [], mobileMap: false, demo: true, loading: false };
+const state = { venues: [], filtered: [], games: [], gamesConnected: false, selectedId: null, sport: 'All', area: '', search: '', limit: 10, userLocation: null, map: null, mapReady: false, mapMarkers: [], mobileMap: true, demo: true, loading: false };
 const icons = { Football:'⚽', Badminton:'🏸', Cricket:'🏏', Basketball:'🏀', Swimming:'🏊', Tennis:'🎾', Pickleball:'🥎' };
 const cityCenter = [77.061, 28.449];
 
@@ -33,6 +35,7 @@ async function loadVenues() {
     $('#dataBadge').classList.toggle('demo-pill',useDemo);
     $('#dataNote').textContent=useDemo?'Sample venue listings for UI review. Availability and prices are confirmed on WhatsApp.':'Availability and final prices are confirmed during booking.';
     populateFilters(); applyFilters();
+    loadGames();
     const deepLink=new URLSearchParams(location.search).get('venue');
     if(deepLink && state.venues.some(v=>v.id===deepLink))openDetail(deepLink,false);
   } catch(error) {
@@ -41,10 +44,33 @@ async function loadVenues() {
     $('#dataBadge').textContent='UNAVAILABLE';
   }
 }
+async function loadGames(){
+  if(state.demo){state.games=[];state.gamesConnected=false;renderGames();return;}
+  try{
+    const res=await fetch(`${config.VENUE_API_BASE_URL.replace(/\/$/,'')}/pickup-games?city=gurugram`,{headers:{Accept:'application/json'}});
+    if(!res.ok)throw new Error(`Pickup game service returned ${res.status}`);
+    const payload=await res.json();const rows=Array.isArray(payload)?payload:payload.games;
+    if(!Array.isArray(rows))throw new Error('Pickup game response is missing games');
+    state.games=rows.filter(g=>g&&text(g.id)&&text(g.venueId)&&text(g.sport)&&Number.isFinite(Date.parse(g.startAt))&&Date.parse(g.startAt)>Date.now()).sort((a,b)=>Date.parse(a.startAt)-Date.parse(b.startAt));
+    state.gamesConnected=true;
+  }catch{state.games=[];state.gamesConnected=false;}
+  renderGames();
+}
+function gameTime(game){return new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(new Date(game.startAt));}
+function renderGames(){
+  $('#pickupCount').textContent=state.gamesConnected&&state.games.length?String(state.games.length):'';
+  if(!state.gamesConnected){$('#pickupList').innerHTML='<div class="pickup-empty"><strong>Live games are not connected yet.</strong><p>When Sportozen posts games, this view will show the sport, venue, start time and verified player spots left.</p></div>';return;}
+  if(!state.games.length){$('#pickupList').innerHTML='<div class="pickup-empty"><strong>No pickup games listed right now.</strong><p>Check back for new games in Gurugram.</p></div>';return;}
+  $('#pickupList').innerHTML=state.games.map(g=>{const venue=state.venues.find(v=>v.id===g.venueId),full=spotsRemaining(g)===0;return `<article class="pickup-card"><div class="pickup-card-top"><span class="pickup-sport">${icons[g.sport]||'✦'} ${escapeHtml(g.sport)}</span><span class="pickup-spots ${full?'full':''}">${escapeHtml(spotsLabel(g))}</span></div><h3>${escapeHtml(venue?.name||g.venueName||'Venue to be confirmed')}</h3><p>📍 ${escapeHtml(venue?.locality||'Gurugram')} · ${escapeHtml(gameTime(g))}</p><button type="button" data-game="${escapeAttr(g.id)}" ${full?'disabled':''}>${full?'Game full':'Ask to join on WhatsApp ↗'}</button></article>`;}).join('');
+  $('#pickupList').querySelectorAll('[data-game]').forEach(button=>button.addEventListener('click',()=>joinGame(button.dataset.game)));
+}
+function joinGame(id){const game=state.games.find(g=>g.id===id);if(!game||spotsRemaining(game)===0)return;const venue=state.venues.find(v=>v.id===game.venueId);const number=String(config.SPORTOZEN_WHATSAPP_NUMBER||'').replace(/\D/g,'');if(!number){toast('Sportozen WhatsApp number is not configured.');return;}const message=[`Hi Sportozen, I would like to join the ${game.sport} pickup game.`,`Game ID: ${game.id}`,`Venue: ${venue?.name||game.venueName||'Please confirm'} (ID: ${game.venueId})`,`Start: ${gameTime(game)} IST`,'Please confirm that a player spot is still available, the fee and any cancellation terms. This is an enquiry, not a confirmed place.'].join('\n');window.location.assign(`https://api.whatsapp.com/send/?phone=${number}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`);}
 function populateFilters(){
   const sports=['All',...new Set(state.venues.flatMap(v=>v.sports))];
-  $('#sportFilters').innerHTML=sports.map(s=>`<button class="chip ${state.sport===s?'active':''}" type="button" data-sport="${escapeAttr(s)}">${icons[s]||'✦'} ${escapeHtml(s)}</button>`).join('');
-  $('#sportFilters').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state.sport=b.dataset.sport;state.limit=10;populateFilters();applyFilters();}));
+  for(const selector of ['#sportFilters','#mapSportFilters']){
+    $(selector).innerHTML=sports.map(s=>`<button class="chip ${state.sport===s?'active':''}" type="button" data-sport="${escapeAttr(s)}" aria-pressed="${state.sport===s}">${icons[s]||'✦'} ${escapeHtml(s)}</button>`).join('');
+    $(selector).querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state.sport=b.dataset.sport;state.limit=10;populateFilters();applyFilters();focusResults();}));
+  }
   const areas=[...new Set(state.venues.map(v=>v.locality).filter(Boolean))].sort();
   $('#locality').innerHTML='<option value="">All areas</option>'+areas.map(a=>`<option value="${escapeAttr(a)}">${escapeHtml(a)}</option>`).join('');
   $('#locality').value=state.area;
@@ -53,14 +79,21 @@ function applyFilters(){
   const q=state.search.toLocaleLowerCase();
   state.filtered=state.venues.filter(v=>(state.sport==='All'||v.sports.includes(state.sport))&&(!state.area||v.locality===state.area)&&(!q||[v.name,v.locality,v.address,...v.sports].some(x=>text(x).toLocaleLowerCase().includes(q))));
   if(state.userLocation)state.filtered.sort((a,b)=>haversine(state.userLocation,[a.longitude,a.latitude])-haversine(state.userLocation,[b.longitude,b.latitude]));
-  $('#resultCount').textContent=state.filtered.length.toLocaleString('en-IN'); $('#mapCount').textContent=`${state.filtered.length} ${state.filtered.length===1?'place':'places'}`;
+  $('#resultCount').textContent=state.filtered.length.toLocaleString('en-IN');$('#resultLabel').textContent=state.filtered.length===1?'venue':'venues'; $('#mapCount').textContent=`${state.filtered.length} ${state.filtered.length===1?'place':'places'}`;
   renderList(); updateMap();
+}
+function focusResults(){
+  if(!state.mapReady || !state.filtered.length || (matchMedia('(max-width:760px)').matches&&!state.mobileMap))return;
+  if(state.filtered.length===1){const v=state.filtered[0];state.map.flyTo({center:[v.longitude,v.latitude],zoom:13.2,duration:300});return;}
+  const bounds=new maplibregl.LngLatBounds();state.filtered.forEach(v=>bounds.extend([v.longitude,v.latitude]));
+  state.map.fitBounds(bounds,{padding:{top:190,bottom:110,left:45,right:45},maxZoom:13.2,duration:300});
 }
 function renderList(){
   const shown=state.filtered.slice(0,state.limit);
   $('#venueList').innerHTML=shown.length?shown.map(v=>{
     const distance=state.userLocation?`${haversine(state.userLocation,[v.longitude,v.latitude]).toFixed(1)} km straight-line`:(v.locality||'Gurugram');
-    return `<article class="venue-card ${state.selectedId===v.id?'selected':''}" tabindex="0" data-id="${escapeAttr(v.id)}" aria-label="View ${escapeAttr(v.name)}"><div class="venue-art"><span>${icons[venueSport(v)]||'✦'}</span></div><div class="venue-content"><div class="venue-topline"><span class="venue-sport">${escapeHtml(venueSport(v))}</span><span class="venue-area">${escapeHtml(distance)}</span></div><h3 class="venue-name">${escapeHtml(v.name)}</h3><p class="venue-address">${escapeHtml(v.address||placeLabel(v))}</p><div class="venue-bottom"><span class="price-copy">${escapeHtml(priceLabel(v))}</span><button class="card-book" type="button" data-book="${escapeAttr(v.id)}">Book on WhatsApp ↗</button></div></div></article>`;
+    const rating=verifiedRating(v),offer=venueOffer(v);
+    return `<article class="venue-card ${state.selectedId===v.id?'selected':''}" tabindex="0" data-id="${escapeAttr(v.id)}" aria-label="View ${escapeAttr(v.name)}"><div class="venue-art"><span>${icons[venueSport(v)]||'✦'}</span></div><div class="venue-content"><div class="venue-topline"><span class="venue-sport">${escapeHtml(v.sports.length?v.sports.join(' · '):'Sports')}</span><span class="venue-area">${escapeHtml(distance)}</span></div><h3 class="venue-name">${escapeHtml(v.name)}</h3><p class="venue-address">${escapeHtml(v.address||placeLabel(v))}</p><div class="venue-facts"><span class="venue-rating">${rating?`★ ${rating.value.toFixed(1)} <small>(${rating.count})</small>`:'No verified rating'}</span>${offer?`<span class="venue-offer">${escapeHtml(offer.label)}</span>`:''}</div><div class="venue-bottom"><span class="price-copy">${escapeHtml(priceLabel(v))}</span><button class="card-book" type="button" data-book="${escapeAttr(v.id)}">Book on WhatsApp ↗</button></div></div></article>`;
   }).join(''):'<div class="empty"><strong>No venues match those filters.</strong><p>Try another sport, area, or search.</p></div>';
   $('#venueList').querySelectorAll('.venue-card').forEach(card=>{card.addEventListener('click',e=>{if(e.target.closest('[data-book]')){openDetail(card.dataset.id);return;} openDetail(card.dataset.id);});card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(card.dataset.id);}})});
   $('#loadMore').hidden=state.filtered.length<=state.limit;
@@ -118,8 +151,10 @@ function openDetail(id,writeUrl=true){
   state.selectedId=id;renderList();updateMap();if(writeUrl)setUrl(id);
   const sports=v.sports.length?v.sports:['Sports'];
   const facilities=Array.isArray(v.facilities)&&v.facilities.length?v.facilities.map(item=>`<span class="detail-chip">${escapeHtml(item)}</span>`).join(''):'<p class="detail-text">Facility information is not available yet. Ask Sportozen before booking.</p>';
-  const rating=v.rating && Number.isFinite(Number(v.rating.value)) && Number.isFinite(Number(v.rating.count))?`★ ${Number(v.rating.value).toFixed(1)} (${Number(v.rating.count)} reviews)`:'Rating unavailable';
-  const offer=v.offer?.label?`<div class="detail-offer"><strong>${escapeHtml(v.offer.label)}</strong><span>${escapeHtml(v.offer.terms||'Confirm offer terms before booking')}</span></div>`:'';
+  const ratingData=verifiedRating(v);
+  const rating=ratingData?`★ ${ratingData.value.toFixed(1)} (${ratingData.count} reviews)`:'No verified rating yet';
+  const activeOffer=venueOffer(v);
+  const offer=activeOffer?`<div class="detail-offer"><strong>${escapeHtml(activeOffer.label)}</strong><span>${escapeHtml(activeOffer.terms||'Confirm offer terms before booking')}</span></div>`:'';
   const photo=Array.isArray(v.photos)&&safeHttpUrl(v.photos[0]);
   const source=safeHttpUrl(v.sourceUrl);
   const formats=Array.isArray(v.formats)&&v.formats.length?v.formats.map(item=>`<span class="detail-chip">${escapeHtml(item)}</span>`).join(''):'';
@@ -135,7 +170,7 @@ function openDetail(id,writeUrl=true){
       <div class="detail-links"><a href="${escapeAttr(directions)}" target="_blank" rel="noopener noreferrer">↗ View map location</a><span>${state.userLocation?`${haversine(state.userLocation,[v.longitude,v.latitude]).toFixed(1)} km straight-line away`:escapeHtml(v.locality||v.city||'Gurugram')}</span></div>
       ${v.locationNote?`<p class="detail-caution">${escapeHtml(v.locationNote)}</p>`:''}
       ${state.demo?'<p class="detail-caution">Demo listing. Confirm whether this venue is available for booking with Sportozen.</p>':''}
-      <div class="detail-meta"><div><small>Starting price</small><strong>${escapeHtml(priceLabel(v))}</strong></div><div><small>Community rating</small><strong>${escapeHtml(rating)}</strong></div><div><small>Opening hours</small><strong>${escapeHtml(v.openingHours||'Confirm on WhatsApp')}</strong></div><div><small>Booking method</small><strong>Enquire on WhatsApp</strong></div></div>
+      <div class="detail-meta"><div><small>Starting price</small><strong>${escapeHtml(priceLabel(v))}</strong></div><div><small>Community rating</small><strong>${escapeHtml(rating)}</strong></div><div><small>Opening hours</small><strong>${escapeHtml(v.openingHours||'Confirm on WhatsApp')}</strong></div><div><small>Offers</small><strong>${activeOffer?'Offer shown below':'No verified offer listed'}</strong></div></div>
       ${offer}
       ${formats?`<h3>Play formats</h3><div class="detail-facilities">${formats}</div>`:''}
       <h3>Facilities</h3><div class="detail-facilities">${facilities}</div>
@@ -157,18 +192,21 @@ async function createEnquiry(p){if(!config.VENUE_API_BASE_URL||state.demo)return
 async function handoff(v){if(state.loading)return;state.loading=true;const button=$('#bookingButton');button.disabled=true;button.textContent='Opening WhatsApp…';let reference=null;const p=bookingPreference(v);try{reference=await createEnquiry(p);}catch{toast('Enquiry tracking is unavailable. Your WhatsApp message still includes the venue.');}const message=composeMessage(v,p,reference);const number=String(config.SPORTOZEN_WHATSAPP_NUMBER||'').replace(/\D/g,'');if(!number){toast('Sportozen WhatsApp number is not configured. Copy the message instead.');button.disabled=false;button.textContent='Book on WhatsApp ↗';state.loading=false;return;}const url=`https://api.whatsapp.com/send/?phone=${number}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;window.location.assign(url);button.disabled=false;button.textContent='Book on WhatsApp ↗';state.loading=false;}
 async function copyMessage(v){const message=composeMessage(v,bookingPreference(v),null);try{await navigator.clipboard.writeText(message);toast('WhatsApp message copied.');}catch{toast('Could not copy automatically. Please use Book on WhatsApp.');}}
 async function shareVenue(v){const url=currentUrl(v.id);try{if(navigator.share)await navigator.share({title:v.name,url});else{await navigator.clipboard.writeText(url);toast('Venue link copied.');}}catch(error){if(error.name!=='AbortError')toast('Could not share this venue.');}}
-function toggleMobile(map){state.mobileMap=map;$('.app-shell').classList.toggle('mobile-map',map);$('#listToggle').classList.toggle('active',!map);$('#mapToggle').classList.toggle('active',map);if(map)setTimeout(()=>state.map?.resize(),50);}
+function toggleMobile(map){state.mobileMap=map;$('.app-shell').classList.toggle('mobile-map',map);$('#listToggle').classList.toggle('active',!map);$('#mapToggle').classList.toggle('active',map);if(map)setTimeout(()=>{state.map?.resize();focusResults();},50);}
+function setSearch(value){state.search=value.trim();$('#search').value=value;$('#mapSearch').value=value;state.limit=10;applyFilters();focusResults();}
 function initControls(){
-  $('#search').addEventListener('input',e=>{state.search=e.target.value.trim();state.limit=10;applyFilters();});
-  $('#locality').addEventListener('change',e=>{state.area=e.target.value;state.limit=10;applyFilters();});
-  $('#clearFilters').addEventListener('click',()=>{state.sport='All';state.area='';state.search='';state.limit=10;$('#search').value='';populateFilters();applyFilters();});
+  for(const selector of ['#search','#mapSearch'])$(selector).addEventListener('input',e=>setSearch(e.target.value));
+  $('#locality').addEventListener('change',e=>{state.area=e.target.value;state.limit=10;applyFilters();focusResults();});
+  $('#clearFilters').addEventListener('click',()=>{state.sport='All';state.area='';state.search='';state.limit=10;$('#search').value='';$('#mapSearch').value='';populateFilters();applyFilters();focusResults();});
   $('#loadMore').addEventListener('click',()=>{state.limit+=10;renderList();});
   $('#locate').addEventListener('click',()=>{if(!navigator.geolocation){toast('Location is unavailable on this device.');return;}navigator.geolocation.getCurrentPosition(pos=>{state.userLocation=[pos.coords.longitude,pos.coords.latitude];applyFilters();state.map?.flyTo({center:state.userLocation,zoom:12.5});toast('Showing straight-line distance from your location.');},()=>toast('Location permission was not granted. Choose an area instead.'),{enableHighAccuracy:false,timeout:10000});});
   $('#recenter').addEventListener('click',()=>state.map?.flyTo({center:cityCenter,zoom:11.3}));
   $('#cityButton').addEventListener('click',()=>toast('Gurugram is available first. More cities are coming.'));
   $('#listToggle').addEventListener('click',()=>toggleMobile(false));$('#mapToggle').addEventListener('click',()=>toggleMobile(true));
   $('#detailClose').addEventListener('click',closeDetail);$('#detailScrim').addEventListener('click',closeDetail);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#detailOverlay').hidden)closeDetail();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#search').focus();}});
+  $('#pickupButton').addEventListener('click',()=>{$('#pickupOverlay').hidden=false;renderGames();});
+  $('#pickupClose').addEventListener('click',()=>$('#pickupOverlay').hidden=true);$('#pickupScrim').addEventListener('click',()=>$('#pickupOverlay').hidden=true);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#pickupOverlay').hidden)$('#pickupOverlay').hidden=true;else if(e.key==='Escape'&&!$('#detailOverlay').hidden)closeDetail();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();(matchMedia('(max-width:760px)').matches&&state.mobileMap?$('#mapSearch'):$('#search')).focus();}});
   window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('venue');if(id&&state.venues.some(v=>v.id===id))openDetail(id,false);else if(!$('#detailOverlay').hidden)closeDetail();});
   let touchStart=null;$('.detail-panel').addEventListener('touchstart',e=>{touchStart=e.touches[0].clientY-$('.detail-panel').getBoundingClientRect().top<70?e.touches[0].clientY:null;},{passive:true});$('.detail-panel').addEventListener('touchend',e=>{if(touchStart!=null && e.changedTouches[0].clientY-touchStart>110)closeDetail();touchStart=null;},{passive:true});
 }

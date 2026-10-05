@@ -2,6 +2,8 @@
 
 Mobile-first venue discovery and WhatsApp enquiry app. The production venue, availability, payment, and WhatsApp bot integrations are pending access to Sportozen's existing cloud services. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
+The map has search by sport, venue, or area, plus sport filters. Venue cards show all listed sports and display ratings or offers only when the venue API supplies verified values. Pickup games show upcoming start times and player spots left when a live game feed is connected; the demo does not invent games or player counts.
+
 ## Run
 
 Run `node server.mjs`, then open `http://127.0.0.1:4173`. No build step or npm dependencies are required. The server is for local preview only.
