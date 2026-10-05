@@ -146,6 +146,8 @@
         "Football",
         "Cricket"
       ],
+      "formats": ["Football 5s", "Football 7s", "Box cricket"],
+      "locationNote": "Approximate school-campus map pin. Confirm the turf entrance with Sportozen before arriving.",
       "sourceUrl": "https://www.playatspada.com/spadaarenas-easgurgaon",
       "photos": [],
       "facilities": [],

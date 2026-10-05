@@ -16,7 +16,7 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell mobile-map">
     <header class="topbar">
       <a class="brand" href="/" aria-label="Sportozen home"><span class="brand-mark">S<span class="brand-dot">●</span></span><span>SPORTOZEN<small>FIND YOUR GAME</small></span></a>
       <div class="topbar-right"><span class="city-kicker">EXPLORE IN</span><button class="city-button" id="cityButton" type="button" aria-label="Selected city Gurugram">📍 Gurugram <span>⌄</span></button></div>
@@ -29,9 +29,9 @@
         <p class="data-note" id="dataNote">Sample venue listings for UI review. Availability and prices are confirmed on WhatsApp.</p>
         <div class="venue-list" id="venueList" aria-live="polite"></div><button class="load-more" id="loadMore" type="button" hidden>Show more venues ↓</button>
       </section>
-      <section class="map-panel" id="mapPanel" aria-label="Venue map"><div id="map" class="map"></div><div class="map-shade"></div><div class="map-top"><span class="map-caption"><span class="pulse"></span> GURUGRAM PLAY MAP</span><span class="map-count" id="mapCount">0 places</span></div><div class="map-footer"><span>Map © OpenStreetMap contributors · OpenFreeMap</span><button id="recenter" type="button">◎ Recenter</button></div><div class="map-fallback" id="mapFallback" hidden>Map tiles unavailable. Browse and book from the venue list.</div></section>
+      <section class="map-panel" id="mapPanel" aria-label="Venue map"><div id="map" class="map"></div><div class="map-shade"></div><div class="map-top"><span class="map-caption"><span class="pulse"></span> GURUGRAM PLAY MAP</span><span class="map-count" id="mapCount">0 places</span></div><p class="map-tip">Tap a marker to explore the venue and book on WhatsApp.</p><div class="map-footer"><span>Map © OpenStreetMap contributors · OpenFreeMap</span><button id="recenter" type="button">◎ Recenter</button></div><div class="map-fallback" id="mapFallback" hidden>Map tiles unavailable. Browse and book from the venue list.</div></section>
     </main>
-    <div class="mobile-switch" role="group" aria-label="View"><button id="listToggle" class="active" type="button">☷ List</button><button id="mapToggle" type="button">◉ Map</button></div>
+    <div class="mobile-switch" role="group" aria-label="View"><button id="listToggle" type="button">☷ List</button><button id="mapToggle" class="active" type="button">◉ Map</button></div>
     <aside class="detail-overlay" id="detailOverlay" hidden><div class="detail-scrim" id="detailScrim"></div><div class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><button class="detail-close" id="detailClose" type="button" aria-label="Close venue details">✕</button><div id="detailContent"></div></div></aside>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </div>
